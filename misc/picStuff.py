@@ -6,30 +6,36 @@ import os
 import scipy.misc
 import random
 
-root='./fullimages'
+root='/home/mykyta/DL4CVProject/images'
 
+PATH = os.path.normpath('/home/mykyta/DL4CVProject/smallimages/')
 
-#Set your own PATH 
-PATH = os.path.normpath('C:/Users/kenny/Desktop/toGit/misc/smallimages/')
+blacklist = ['flower-painting', 'landscape']
 
-for subdir, dirs, files in os.walk(root):
-    style = subdir[2:]
-    name =  style
-    if len(style) < 1:
-        continue
-    try:
-        os.stat(PATH + name)
-    except:
-        os.mkdir(PATH + name)
-    
-    i = 0
-    for f in files:
-        source = style + '\\' + f
-        print(str(i) + source)
-        try:
-            image = scipy.misc.imread(source)
-            image = scipy.misc.imresize(image,(64,64))
-            scipy.misc.imsave(PATH + name + '\\' + str(i) + '.png',image)
-            i+=1
-        except Exception:
-            print('missed it: ' + source)
+for subdir, dirs, _ in os.walk(root):
+    for style in dirs:
+        if len(style) < 1:
+            continue
+
+        if style in blacklist:
+            continue
+
+        subfolder = PATH+'/'+style
+
+        print('Writing to: '+subfolder)
+
+        if not os.path.isdir(subfolder):
+            print('creating subfolder '+subfolder)
+            os.makedirs(subfolder)
+        
+        i = 0
+        for _, _, files in os.walk(root+'/'+style):
+            for source in files: 
+                print(source)
+                try:
+                    image = scipy.misc.imread(root+'/'+style+'/'+source)
+                    image = scipy.misc.imresize(image,(64,64))
+                    scipy.misc.imsave(subfolder + '/' + str(i) + '.png',image)
+                    i+=1
+                except Exception:
+                    print('missed image: ' + root+'/'+style+'/'+source)
