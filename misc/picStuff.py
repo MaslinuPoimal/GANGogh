@@ -6,14 +6,19 @@ import os
 import scipy.misc
 import random
 
-root='/home/mykyta/DL4CVProject/images'
+root = os.path.split(os.path.realpath(__file__))[0] + '/../../images'
+root = os.path.normpath(root)
 
-PATH = os.path.normpath('/home/mykyta/DL4CVProject/smallimages/')
+PATH = os.path.dirname(os.path.realpath(__file__))+'/../../smallimages'
+PATH = os.path.normpath(PATH)
 
-blacklist = ['flower-painting', 'landscape']
+blacklist = []
 
 for subdir, dirs, _ in os.walk(root):
     for style in dirs:
+        
+        print(style)
+        
         if len(style) < 1:
             continue
 
