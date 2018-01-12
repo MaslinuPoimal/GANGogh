@@ -19,6 +19,7 @@ import tflib.save_images
 import tflib.wikiartGenre
 import tflib.ops.layernorm
 import tflib.plot
+#from tensorflow import train
 
 
 MODE = 'acwgan' # dcgan, wgan, wgan-gp, lsgan
@@ -31,6 +32,7 @@ LAMBDA = 10 # Gradient penalty lambda hyperparameter
 OUTPUT_DIM = 64*64*3 # Number of pixels in each iamge
 CLASSES = 14 #Number of classes, for genres probably 14
 PREITERATIONS = 2000 #Number of preiteration training cycles to run
+PRETRAINED_MODEL_PATH = 'checkpoints/model.ckpt'
 lib.print_model_settings(locals().copy())
 
 def GeneratorAndDiscriminator():
@@ -354,19 +356,24 @@ with tf.Session(config=tf.ConfigProto(allow_soft_placement=True)) as session:
     if not os.path.isdir('generated'):
         os.makedirs('generated')
 
+    save_location = 'checkpoints/model.ckpt'
+    if not os.path.isdir('checkpoints'):
+        os.makedirs('checkpoints')
+
     lib.save_images.save_images(_x_r.reshape((BATCH_SIZE, 3, 64, 64)), 'generated/samples_groundtruth.png')
 
-
-
-    session.run(tf.initialize_all_variables(), feed_dict={generated_labels_conv: genRandomLabels(BATCH_SIZE,CLASSES)})
+    session.run(tf.global_variables_initializer(), feed_dict={generated_labels_conv: genRandomLabels(BATCH_SIZE,CLASSES)})
     gen = train_gen()
-    
-    for iterp in range(PREITERATIONS):
-        _data, _labels = next(gen)
-        _ , accuracy = session.run([disc_train_op, realAccuracy],feed_dict = {all_real_data_conv: _data, all_real_label_conv: _labels, generated_labels_conv: genRandomLabels(BATCH_SIZE, CLASSES)})
-        if iterp % 100 == 99:
-            print('pretraining accuracy: ' + str(accuracy))
-    
+    saver = tf.train.Saver()
+
+    if not PRETRAINED_MODEL_PATH:
+        for iterp in range(PREITERATIONS):
+            _data, _labels = next(gen)
+            _ , accuracy = session.run([disc_train_op, realAccuracy],feed_dict = {all_real_data_conv: _data, all_real_label_conv: _labels, generated_labels_conv: genRandomLabels(BATCH_SIZE, CLASSES)})
+            if iterp % 100 == 99:
+                print('pretraining accuracy: ' + str(accuracy))
+    else:
+        saver.restore(session, PRETRAINED_MODEL_PATH)
             
     for iteration in range(ITERS):
         start_time = time.time()
@@ -400,7 +407,11 @@ with tf.Session(config=tf.ConfigProto(allow_soft_placement=True)) as session:
             lib.plot.plot('dev generated class cost', _gen_class_cost)
             lib.plot.plot('dev gen  cost', _dev_gen_cost_test)
             lib.plot.plot('dev gen accuracy', _dev_genAccuracy)
-            lib.plot.plot('dev real accuracy', _dev_realAccuracy)        
+            lib.plot.plot('dev real accuracy', _dev_realAccuracy)
+
+            save_path = saver.save(session, save_location)
+            print('Saved model checkpoint in '+save_location)
+
 
 
         if iteration % 1000 == 999:
